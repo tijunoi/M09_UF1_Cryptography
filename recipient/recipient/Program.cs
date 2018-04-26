@@ -96,11 +96,28 @@ namespace recipient
 
             //1. Desencripta la clau simètrica (key + IV)
             byte[] DecryptedIVBytes = RSARecipient.Decrypt(receivedEncriptedMessage.EncryptedIV, true);
+            byte[] DecryptedKey = RSARecipient.Decrypt(receivedEncriptedMessage.EncryptedKey, true);
 
-			//2. Desencriptem el missatge
+
+            //2. Desencriptem el missatge
+            var aes = new AesCryptoServiceProvider();
+            aes.IV = DecryptedIVBytes;
+            aes.Key = DecryptedKey;
+
+            byte[] msgDecryptedBytes = aes.CreateDecryptor().TransformFinalBlock(receivedEncriptedMessage.EncryptedMsg, 0, receivedEncriptedMessage.EncryptedMsg.Length);
+            String mensajeDesencriptado = Encoding.UTF8.GetString(msgDecryptedBytes);
+
+            //3. Comprovació de la integritat.
+            if (RSASender.VerifyData(msgDecryptedBytes, new SHA1CryptoServiceProvider(), receivedEncriptedMessage.SignedHash))
+            {
+                Console.WriteLine("EL MISSATGE ES VERIDIC!!!");
+                Console.WriteLine(mensajeDesencriptado);
+            } else
+            {
+                Console.WriteLine("ERROR DE SEGURETAT!");
+            }
 
 
-            //3. Comprovació de la integritat.  
 
         }
 
